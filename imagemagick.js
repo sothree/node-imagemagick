@@ -153,14 +153,15 @@ exports.identify = function(pathOrArgs, callback) {
       if (isCustom) {
         result = stdout;
       } else {
-        result = parseIdentify(stdout);
-        geometry = result['geometry'].split(/x/);
-
-        result.format = result.format.match(/\S*/)[0]
-        result.width = parseInt(geometry[0]);
-        result.height = parseInt(geometry[1]);
-        result.depth = parseInt(result.depth);
-        if (result.quality !== undefined) result.quality = parseInt(result.quality) / 100;
+        result = parseIdentify(stdout);        
+        if (result['geometry'] !== undefined) {
+          geometry = result['geometry'].split(/x/);
+          result.format = result.format.match(/\S*/)[0];
+          result.width = parseInt(geometry[0]);
+          result.height = parseInt(geometry[1]);
+          result.depth = parseInt(result.depth);
+          if (result.quality !== undefined) result.quality = parseInt(result.quality) / 100;
+        }        
       }
     }
     callback(err, result);

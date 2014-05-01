@@ -108,10 +108,11 @@ function parseIdentify(input) {
 
   lines.shift(); //drop first line (Image: name.jpg)
 
-  for (i in lines) {
+  for (var i = 0; i < lines.length; i++) {
     currentLine = lines[i];
     indent = currentLine.search(/\S/);
-    if (indent >= 0) {
+    // ANTON FIX: change from ">= 0" to avoid crashing when clipping paths present
+    if (indent > 0) {
       comps = currentLine.split(': ');
       if (indent > prevIndent) indents.push(indent);
       while (indent < prevIndent && props.length) {
@@ -297,7 +298,6 @@ exports.crop = function (options, callback) {
         args      = [];
     t.args.forEach(function (arg) {
       if (printNext === true){
-        console.log("arg", arg);
         printNext = false;
       }
       // ignoreArg is set when resize flag was found
@@ -305,12 +305,10 @@ exports.crop = function (options, callback) {
         args.push(arg);
       // found resize flag! ignore the next argument
       if (arg == '-resize'){
-        console.log("resize arg");
         ignoreArg = true;
         printNext = true;
       }
       if (arg === "-crop"){
-        console.log("crop arg");
         printNext = true;
       }
       // found the argument after the resize flag; ignore it and set crop options
@@ -322,9 +320,14 @@ exports.crop = function (options, callback) {
         args = args.concat([
           '-resize', resizeTo,
           '-gravity', dGravity,
-          '-crop', ''+t.opt.width + 'x' + t.opt.height + '+0+0',
-          '+repage'
+          '-crop', ''+t.opt.width + 'x' + t.opt.height + '+0+0'          
         ]);
+        // Scale back if the aspec crop is requested
+        if (options.aspect && (dSrc < dDst && meta.width < t.opt.width || dSrc >= dDst && meta.height < t.opt.height)) {
+          var resizeBack  = (dSrc < dDst) ? ''+meta.width+'x' : 'x'+meta.height;
+          args = args.concat(['-resize', resizeBack])          
+        }
+        args.push('+repage');
         ignoreArg = false;
       }
     })
@@ -332,6 +335,14 @@ exports.crop = function (options, callback) {
     t.args = args;
     resizeCall(t, callback);
   })
+}
+
+// modified version of crop that will crop to the aspect radio defined by w & h, without scaling up the image
+// Added by Anton (11/5/2013)
+exports.cropAspect = function (options, callback) {
+  options = options || {};
+  options.aspect = true;
+  exports.crop(options, callback);
 }
 
 exports.resizeArgs = function(options) {
